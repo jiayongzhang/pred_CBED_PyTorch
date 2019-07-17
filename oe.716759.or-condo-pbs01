@@ -1,0 +1,159 @@
+Currently Loaded Modulefiles:
+  1) anaconda3/5.1.0-pe3
+Sun Jul 14 15:24:25 EDT 2019
+cpu
+/software/dev_tools/swtree/cs400_centos7.5_pe2018/anaconda3/5.1.0/centos7.5_gnu8.1.0/anaconda/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+
+Training file [     ./train/batch_train_20.h5 ]:
+	Timing= 13.15 s,	Loss=   1.891499
+
+Training file [     ./train/batch_train_88.h5 ]:
+	Timing= 66.33 s,	Loss=   3.855742
+
+Training file [    ./train/batch_train_222.h5 ]:
+	Timing= 66.10 s,	Loss=   3.575053
+
+Training file [    ./train/batch_train_340.h5 ]:
+	Timing= 55.16 s,	Loss=   3.808784
+
+Training file [    ./train/batch_train_184.h5 ]:
+	Timing= 72.28 s,	Loss=   3.351000
+
+Training file [    ./train/batch_train_173.h5 ]:
+	Timing= 76.30 s,	Loss=   3.573158
+
+Training file [    ./train/batch_train_252.h5 ]:
+	Timing= 74.76 s,	Loss=   3.874517
+
+Training file [    ./train/batch_train_330.h5 ]:
+	Timing= 71.91 s,	Loss=   3.404567
+
+Training file [    ./train/batch_train_103.h5 ]:
+	Timing= 66.52 s,	Loss=   3.259706
+
+Training file [     ./train/batch_train_50.h5 ]:
+	Timing= 62.09 s,	Loss=   2.847926
+
+Training file [    ./train/batch_train_114.h5 ]:
+	Timing= 74.59 s,	Loss=   3.974069
+
+Training file [    ./train/batch_train_245.h5 ]:
+	Timing= 78.24 s,	Loss=   3.411357
+
+Training file [    ./train/batch_train_327.h5 ]:
+	Timing= 72.34 s,	Loss=   2.102088
+
+Training file [     ./train/batch_train_18.h5 ]:
+	Timing= 73.93 s,	Loss=   3.645465
+
+Training file [     ./train/batch_train_47.h5 ]:
+	Timing= 67.67 s,	Loss=   3.403663
+
+Training file [     ./train/batch_train_68.h5 ]:
+	Timing= 62.00 s,	Loss=   3.384512
+
+Training file [     ./train/batch_train_37.h5 ]:
+	Timing= 67.19 s,	Loss=   3.894201
+
+Training file [    ./train/batch_train_164.h5 ]:
+	Timing= 64.72 s,	Loss=   3.770097
+
+Training file [    ./train/batch_train_193.h5 ]:
+	Timing= 68.64 s,	Loss=   3.005105
+
+Training file [    ./train/batch_train_308.h5 ]:
+	Timing= 68.62 s,	Loss=   2.982488
+
+Training file [    ./train/batch_train_235.h5 ]:
+	Timing= 60.20 s,	Loss=   2.475899
+
+Training file [    ./train/batch_train_357.h5 ]:
+	Timing= 55.54 s,	Loss=   2.887598
+
+Training file [     ./train/batch_train_36.h5 ]:
+	Timing= 49.97 s,	Loss=   3.588427
+
+Training file [     ./train/batch_train_69.h5 ]:
+	Timing= 64.92 s,	Loss=   3.885241
+
+Training file [    ./train/batch_train_356.h5 ]:
+	Timing= 74.07 s,	Loss=   3.270582
+
+Training file [    ./train/batch_train_234.h5 ]:
+	Timing= 73.73 s,	Loss=   2.577503
+
+Training file [    ./train/batch_train_309.h5 ]:
+	Timing= 71.67 s,	Loss=   3.875397
+
+Training file [    ./train/batch_train_192.h5 ]:
+	Timing= 72.47 s,	Loss=   1.793010
+
+Training file [    ./train/batch_train_165.h5 ]:
+	Timing= 73.34 s,	Loss=   3.718274
+
+Training file [    ./train/batch_train_326.h5 ]:
+	Timing= 63.32 s,	Loss=   2.312682
+
+Training file [    ./train/batch_train_244.h5 ]:
+	Timing= 80.23 s,	Loss=   2.840121
+
+Training file [    ./train/batch_train_115.h5 ]:
+	Timing= 72.63 s,	Loss=   3.676388
+
+Training file [     ./train/batch_train_46.h5 ]:
+	Timing= 71.00 s,	Loss=   3.011441
+
+Training file [     ./train/batch_train_19.h5 ]:
+	Timing= 73.95 s,	Loss=   3.208776
+
+Training file [    ./train/batch_train_102.h5 ]:
+	Timing= 74.80 s,	Loss=   3.837346
+
+Training file [    ./train/batch_train_331.h5 ]:
+	Timing= 63.72 s,	Loss=   3.364092
+
+Training file [    ./train/batch_train_253.h5 ]:
+	Timing= 81.50 s,	Loss=   3.111650
+
+Training file [     ./train/batch_train_51.h5 ]:
+	Timing= 46.69 s,	Loss=   3.597458
+
+Training file [     ./train/batch_train_89.h5 ]:
+	Timing= 81.07 s,	Loss=   3.726365
+
+Training file [     ./train/batch_train_21.h5 ]:
+	Timing= 65.52 s,	Loss=   2.316987
+
+Training file [    ./train/batch_train_172.h5 ]:
+	Timing= 76.16 s,	Loss=   2.794497
+
+Training file [    ./train/batch_train_185.h5 ]:
+	Timing= 51.40 s,	Loss=   3.448411
+
+Training file [    ./train/batch_train_341.h5 ]:
+	Timing= 61.09 s,	Loss=   2.518565
+
+Training file [    ./train/batch_train_223.h5 ]:
+	Timing= 10.03 s,	Loss=   0.808918
+
+Training file [     ./train/batch_train_53.h5 ]:
+	Timing= 78.77 s,	Loss=   3.943803
+
+Training file [      ./train/batch_train_9.h5 ]:
+	Timing= 89.07 s,	Loss=   2.875789
+
+Training file [    ./train/batch_train_251.h5 ]:
+	Timing= 61.66 s,	Loss=   3.743330
+
+Training file [    ./train/batch_train_333.h5 ]:
+	Timing= 71.30 s,	Loss=   3.695959
+
+Training file [    ./train/batch_train_100.h5 ]:
+	Timing= 67.49 s,	Loss=   3.764444
+
+Training file [    ./train/batch_train_221.h5 ]:
+	Timing= 80.91 s,	Loss=   2.413222
+
+Training file [    ./train/batch_train_343.h5 ]:
+	Timing= 81.65 s,	Loss=   2.924500

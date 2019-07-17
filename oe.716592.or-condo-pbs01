@@ -1,0 +1,46 @@
+Currently Loaded Modulefiles:
+  1) anaconda3/5.1.0-pe3
+Sun Jul 14 14:54:01 EDT 2019
+cpu
+/software/dev_tools/swtree/cs400_centos7.5_pe2018/anaconda3/5.1.0/centos7.5_gnu8.1.0/anaconda/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+Training file [./train/batch_train_20.h5     ]:
+	Timing=1.65 s,	Loss=  5.072510
+Training file [./train/batch_train_88.h5     ]:
+	Timing=7.96 s,	Loss=  3.080211
+Training file [./train/batch_train_222.h5    ]:
+	Timing=6.45 s,	Loss=  4.101779
+Training file [./train/batch_train_340.h5    ]:
+	Timing=6.02 s,	Loss=  4.538342
+Training file [./train/batch_train_184.h5    ]:
+	Timing=6.15 s,	Loss=  4.435523
+Training file [./train/batch_train_173.h5    ]:
+	Timing=6.01 s,	Loss=  3.239911
+Training file [./train/batch_train_252.h5    ]:
+	Timing=7.13 s,	Loss=  4.291855
+Training file [./train/batch_train_330.h5    ]:
+	Timing=7.35 s,	Loss=  3.554978
+Training file [./train/batch_train_103.h5    ]:
+	Timing=5.55 s,	Loss=  3.805027
+Training file [./train/batch_train_50.h5     ]:
+	Timing=6.06 s,	Loss=  4.348351
+Training file [./train/batch_train_114.h5    ]:
+	Timing=6.89 s,	Loss=  4.284190
+Training file [./train/batch_train_245.h5    ]:
+	Timing=10.55 s,	Loss=  3.395463
+Training file [./train/batch_train_327.h5    ]:
+	Timing=6.57 s,	Loss=  3.717081
+Training file [./train/batch_train_18.h5     ]:
+	Timing=9.94 s,	Loss=  2.442681
+Training file [./train/batch_train_47.h5     ]:
+	Timing=6.55 s,	Loss=  3.379748
+Training file [./train/batch_train_68.h5     ]:
+	Timing=5.08 s,	Loss=  3.912465
+Training file [./train/batch_train_37.h5     ]:
+	Timing=6.58 s,	Loss=  3.382292
+Training file [./train/batch_train_164.h5    ]:
+	Timing=6.57 s,	Loss=  2.060459
+Training file [./train/batch_train_193.h5    ]:
+	Timing=6.23 s,	Loss=  3.489372
+Training file [./train/batch_train_308.h5    ]:
+	Timing=5.44 s,	Loss=  3.620088

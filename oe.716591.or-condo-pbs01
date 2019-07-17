@@ -1,0 +1,24 @@
+Currently Loaded Modulefiles:
+  1) anaconda3/5.1.0-pe3
+Sun Jul 14 14:50:54 EDT 2019
+cpu
+/software/dev_tools/swtree/cs400_centos7.5_pe2018/anaconda3/5.1.0/centos7.5_gnu8.1.0/anaconda/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+Training file [./train/batch_train_20.h5     ]:
+	Timing: 1.61 s,	Loss:   9.472330
+Training file [./train/batch_train_88.h5     ]:
+	Timing: 6.81 s,	Loss:   3.072048
+Training file [./train/batch_train_222.h5    ]:
+	Timing: 7.39 s,	Loss:   3.511517
+Training file [./train/batch_train_340.h5    ]:
+	Timing: 6.17 s,	Loss:   3.089389
+Training file [./train/batch_train_184.h5    ]:
+	Timing: 7.94 s,	Loss:   3.341712
+Training file [./train/batch_train_173.h5    ]:
+	Timing: 7.31 s,	Loss:   4.431323
+Training file [./train/batch_train_252.h5    ]:
+	Timing: 8.15 s,	Loss:   3.837218
+Training file [./train/batch_train_330.h5    ]:
+	Timing: 6.73 s,	Loss:   3.735753
+Training file [./train/batch_train_103.h5    ]:
+	Timing: 5.89 s,	Loss:   3.557874
