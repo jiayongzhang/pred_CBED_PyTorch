@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """pred_CBED.ipynb
 
@@ -10,7 +9,10 @@ Original file is located at
     https://colab.research.google.com/drive/1so8i-5nk4xpYEuXOXbHDgkIfe8b1LLav
 """
 import sys
+import glob
+import pandas as pd
 import numpy as np
+import collections
 from matplotlib import pyplot as plt
 import h5py
 
@@ -20,9 +22,10 @@ warnings.filterwarnings("ignore")
 
 
 
+#train_paths = glob.glob('./train/batch_train_0.h5')
 train_paths = glob.glob('./' + 'train/' + '*.h5')
 spaces = []
-for this_train in tn(train_paths):
+for this_train in train_paths:
     print("Current file: %s"%this_train)
     try:
         f = h5py.File(this_train, mode='r', swmr=True)
@@ -39,9 +42,9 @@ space_count = collections.Counter(spaces)
 #print(space_count)
 #labels, values = zip(*space_count.items())
 
-labels, values = np.zeros(230), np.zeros(230)
-for key, value in space_count.keys():
-    values[int(key)] = space_count[int(key)+1]
+labels, values = np.arange(230)+1, np.zeros(230)
+for key,value in space_count.items():
+    values[key-1] = value
 
 #save data
 '''
@@ -55,16 +58,11 @@ except:
     raise
     '''
 space_data =  pd.DataFrame(list(zip(labels, values)), columns=["space_group", "count"])
-space_data.to_csv("spaces.csv", index=False)
 
-# save all data
-
-data = pd.read_csv("spaces.csv")
-total_count = data.sum()['count']
-print(total_count)
-new_data = data['count']/total_count
-data['weight'] = new_data
-data.to_csv("weight.csv",index=False)
+total_count = space_data.sum()['count']
+weight = space_data['count']/total_count
+space_data['weight'] = weight
+space_data.to_csv("count.csv",index=False)
 
 exit()
 

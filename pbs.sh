@@ -26,7 +26,8 @@ cd $PBS_O_WORKDIR
 date
 
 #tar xvf 10.13139_OLCF_1510313.tar 
-python run.py
+#python run.py
+python countSpace.py
 wait
 
 date
