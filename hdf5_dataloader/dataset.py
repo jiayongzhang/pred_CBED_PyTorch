@@ -8,6 +8,32 @@ from maker import NUM_PER_SHARD_PKL
 
 default_opener = lambda p_: h5py.File(p_, 'r')
 
+class data_prefetcher():
+    def __init__(self, loader):
+        self.loader = iter(loader)
+        self.preload()
+
+    def preload(self):
+        try:
+            self.next_input, self.next_target = next(self.loader)
+        except StopIteration:
+            self.next_input = None
+            self.next_target = None
+            return
+        self.next_input = self.next_input#.to(device)
+        self.next_target = self.next_target#.to(device).cuda(non_blocking=True)
+        # With Amp, it isn't necessary to manually convert data to half.
+        # if args.fp16:
+        #     self.next_input = self.next_input.half()
+        # else:
+        self.next_input = self.next_input.float()
+            
+    def next(self):
+        input = self.next_input
+        target = self.next_target
+        self.preload()
+        return input, target
+
 
 class HDF5Dataset(Dataset):
     def __init__(self,

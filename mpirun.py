@@ -8,10 +8,9 @@ import glob
 import pandas as pd
 import numpy as np
 from PIL import Image
-#import matplotlib.pyplot as plt
-#from skimage import io, transform
+import matplotlib.pyplot as plt
+from skimage import io, transform
 from hdf5_dataloader import my_transforms
-from prefetch_generator import BackgroundGenerator, background
 import torch
 from torchvision import transforms, datasets, utils
 import torch.nn as nn
@@ -70,30 +69,22 @@ data_transform = transforms.Compose([
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.feats = nn.Sequential(
-            nn.Conv2d(3,6,5),
-            nn.ReLU(True),
-            nn.MaxPool2d(2,2),
-            nn.BatchNorm2d(6),
-            nn.Conv2d(6,16,5),
-            nn.ReLU(True),
-            nn.MaxPool2d(2,2),
-            nn.BatchNorm2d(16)
-        )
-        self.linear = nn.Sequential(
-            nn.Linear(16 * 61 * 61,10000),
-            nn.ReLU(True),
-            nn.Linear(10000,2000),
-            nn.ReLU(True),
-            nn.Linear(2000,500),
-            nn.ReLU(True),
-            nn.Linear(500,230)
-        )
+        self.conv1 = nn.Conv2d(3,6,5)
+        self.pool = nn.MaxPool2d(2,2)
+        self.conv2 = nn.Conv2d(6,16,5)
+        self.fc1 = nn.Linear(16 * 61 * 61,10000)
+        self.fc2 = nn.Linear(10000,2000)
+        self.fc3 = nn.Linear(2000,500)
+        self.fc4 = nn.Linear(500,230)
 
     def forward(self, x):
-        x = self.feats(x)
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
         x = x.view(-1,16 * 61 * 61)
-        x = self.linear(x)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = self.fc4(x)
         
         return x
     
@@ -104,17 +95,16 @@ model.to(device)
 count_data = pd.read_csv("count.csv")
 #weights = count_data['weight']
 weights = 1.0/count_data['weight']#.replace(np.inf, 0.0)
-weights[weights==np.inf] = 1000.0
+weights[weights==np.inf] = 0.0
 class_weights = torch.Tensor(weights).to(device)
 
 criterion = nn.CrossEntropyLoss(weight=class_weights)
-optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.99))
-#optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
 def train(epoch=1):
     model.train()
     for i in range(epoch):
-        for data, target in BackgroundGenerator(train_loader, max_prefetch = 2):
+        for data, target in train_loader:
             data = Variable(data).to(device)
             target = Variable(target).to(device)
             optimizer.zero_grad()
@@ -146,7 +136,7 @@ def dev():
 
 # train
 data_paths = glob.glob('./train/' + '*.h5')
-BATCH_SIZE = 64
+BATCH_SIZE = 4
 for this_file in (data_paths):
     try:
         train_dataset = CBEDDataset(this_file,

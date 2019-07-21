@@ -8,12 +8,12 @@ import numpy as np
 # TODO:
 # - update docstrings
 
-class ArrayPower(object):
+class TensorPower(object):
     def __init__(self, exponent):
         self.exponent = exponent
 
     def __call__(self, array):
-        return np.pow(array, self.exponent)
+        return torch.pow(array, self.exponent)
 
 
 class ArrayCenterCrop(object):

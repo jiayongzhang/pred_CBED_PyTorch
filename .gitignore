@@ -10,6 +10,7 @@ dev/
 test/
 orig_data/
 oe*
+run-*py
 
 # C extensions
 *.so
