@@ -28,26 +28,29 @@ from __future__ import print_function, division
 import os
 import time
 import h5py
-import shutil
-import collections
+#import shutil
+#import collections
 import glob
-import pylab
+#import pylab
 import pandas as pd
 import numpy as np
-from tqdm import tqdm, tqdm_notebook as tn
+#from tqdm import tqdm, tqdm_notebook as tn
 from PIL import Image
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 #from skimage import io, transform
 from prefetch_generator import BackgroundGenerator, background
 import torch
 from torchvision import transforms, datasets, utils
 import torch.nn as nn
-import torch.nn.functional as F
+#import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 
-from hdf5_dataloader import my_transforms
+# defined functions
+from tools import my_transforms
+from tools.my_model import Model
+from tools.my_prefetcher import data_prefetcher
  
 # Ignore warnings
 import warnings
@@ -55,34 +58,28 @@ warnings.filterwarnings("ignore")
  
 # %matplotlib inline
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
+def get_weights(filename):
+    count_data = pd.read_csv(filename)
+    weights = 1.0/count_data['weight']#.replace(np.inf, 0.0)
+    weights[weights==np.inf] = 1000.0
 
-class data_prefetcher():
-    ''' data prefetcher'''
-    def __init__(self, loader):
-        self.loader = iter(loader)
-        self.stream = torch.cuda.Stream()
-        self.preload()
+    return weights
 
-    def preload(self):
-        try:
-            self.next_input, self.next_target = next(self.loader)
-        except StopIteration:
-            self.next_input = None
-            self.next_target = None
-            return
-        with torch.cuda.stream(self.stream):
-            self.next_input = self.next_input.cuda(non_blocking=True)
-            self.next_target = self.next_target.cuda(non_blocking=True)
-            self.next_input = self.next_input.float()
-            
-    def next(self):
-        torch.cuda.current_stream().wait_stream(self.stream)
-        input = self.next_input
-        target = self.next_target
-        self.preload()
-        return input, target
+# define initial variables
+def init():
+    global device, weights, train_paths, dev_paths
+    global TRAIN_BATCH_SIZE, DEV_BATCH_SIZE
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
+
+    weights = get_weights('count.csv')
+    train_paths = glob.glob('./train/' + '*.h5')
+    dev_paths = glob.glob('./dev/' + '*.h5')
+
+    TRAIN_BATCH_SIZE = 32
+    DEV_BATCH_SIZE = 1
+    
 
 class CBEDDataset(Dataset):
     """ CBED dataset."""
@@ -103,9 +100,9 @@ class CBEDDataset(Dataset):
             tmp_y.append(int(f[key].attrs['space_group'])-1)
         #tmp_y = map(int, tmp_y)
         #self.x_data = torch.from_numpy(np.array(tmp_x))
+        #self.y_data = torch.from_numpy(np.array(tmp_y))
         self.x_data = torch.Tensor(tmp_x)
         self.y_data = torch.Tensor(tmp_y).long()
-        #self.y_data = torch.from_numpy(np.array(tmp_y))
         
     def __getitem__(self, index):
         # convert to image format CxHxW
@@ -127,66 +124,12 @@ data_transform = transforms.Compose([
     #transforms.Normalize(mean = [0.5,0.5,0.5],std = [0.5,0.5,0.5])
 ])
 
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
-        self.conv1 = nn.Conv2d(3,64,5)
-        self.conv2 = nn.Conv2d(64,64,5)
-        self.pool = nn.MaxPool2d(2,2)
-        self.conv3 = nn.Conv2d(64,32,5)
-        self.conv4 = nn.Conv2d(32,32,5)
-        self.conv5 = nn.Conv2d(32,16,5)
-        self.conv6 = nn.Conv2d(16,16,5)
-        self.fc1 = nn.Linear(16 * 25 * 25,2000)
-        #self.fc2 = nn.Linear(2000,2000)
-        self.fc2 = nn.Linear(2000,500)
-        self.fc3 = nn.Linear(500,230)
-        self.dropout = nn.Dropout(0.25)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.pool(x)
-        x = F.relu(self.conv3(x))
-        x = F.relu(self.conv4(x))
-        x = self.pool(x)
-        x = F.relu(self.conv5(x))
-        x = F.relu(self.conv6(x))
-        x = self.pool(x)
-        x = x.view(-1,16 * 25 * 25)
-        x = self.dropout(x)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        #x = F.relu(self.fc3(x))
-        x = self.fc3(x)
-        
-        return x
-    
-model = Model()
-if torch.cuda.device_count() > 1:
-    print("We are running on {} GPUs!\n".format(torch.cuda.device_count()))
-    model = nn.DataParallel(model)
-model.to(device)
-
-count_data = pd.read_csv("count.csv")
-weights = 1.0/count_data['weight']#.replace(np.inf, 0.0)
-weights[weights==np.inf] = 1000.0
-# use softmax
-#weights = np.exp(count_data['weight'])
-class_weights = torch.Tensor(weights).to(device)
-
-criterion = nn.CrossEntropyLoss(weight=class_weights)
-#optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.99))
-#if torch.cuda.device_count() > 1:
-#    optimizer = nn.DataParallel(optimizer)
-
 def train(epoch=0):
     model.train()
-    #for data, target in BackgroundGenerator(train_loader, max_prefetch = 3):
-    prefetcher = data_prefetcher(train_loader)
-    data, target = prefetcher.next()
-    while data is not None:
+    for data, target in BackgroundGenerator(train_loader, max_prefetch = 3):
+    #prefetcher = data_prefetcher(train_loader)
+    #data, target = prefetcher.next()
+    #while data is not None:
         data, target = Variable(data).to(device), Variable(target).to(device)
         optimizer.zero_grad()
         output = model(data)
@@ -194,18 +137,12 @@ def train(epoch=0):
         loss.backward()
         optimizer.step()
 
-        data, target = prefetcher.next()
+        #data, target = prefetcher.next()
         
     #end = time.time()
     #print('Training: Timing: {:.2f} s\tLoss: {:.6f}'.format(
     #      end-begin, loss.item())
 
-    '''
-        if batch_idx%10==9:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx*len(data), len(train_loader.dataset),
-                100. * batch_idx/len(train_loader), loss.item()))
-    '''
     return loss.item()
 
 def dev():
@@ -254,8 +191,30 @@ def dev_multipred():
         test_loss, correct, len(dev_loader.dataset),
         100. * correct / len(dev_loader.dataset)))
 
-train_paths = glob.glob('./train/' + '*.h5')
-BATCH_SIZE = 128
+#================================================================
+# Run starts from here
+#================================================================
+
+init()
+model = Model()
+#if torch.cuda.device_count() > 1:
+#    print("We are running on {} GPUs!\n".format(torch.cuda.device_count()))
+#    model = nn.DataParallel(model)
+model.to(device)
+
+# use softmax
+#weights = np.exp(count_data['weight'])
+class_weights = torch.Tensor(weights).to(device)
+
+criterion = nn.CrossEntropyLoss(weight=class_weights)
+#optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.99))
+#if torch.cuda.device_count() > 1:
+#    optimizer = nn.DataParallel(optimizer)
+
+# prefetch multiple files
+# TODO: send multiple h5 files indices to CBEDDataset, and read it at once
+# Then prefetch this
 for this_file in (train_paths):
     #print("Current file: %s"%this_file)
     try:
@@ -266,7 +225,7 @@ for this_file in (train_paths):
         continue
     else:
         train_loader = DataLoader(dataset=train_dataset,
-                                  batch_size=BATCH_SIZE,
+                                  batch_size=TRAIN_BATCH_SIZE,
                                   shuffle=True,
                                   pin_memory=True,
                                   num_workers=42)
@@ -279,8 +238,6 @@ for this_file in (train_paths):
     print('Training batch:\tTiming: {:.2f} s,\tLoss: {:.6f}'.format(
           end-begin, loss))
 
-dev_paths = glob.glob('./dev/' + '*.h5')
-BATCH_SIZE = 1
 for this_file in (dev_paths):
     #print("Current file: %s"%this_file)
     try:
@@ -291,7 +248,7 @@ for this_file in (dev_paths):
         continue
     else:
         dev_loader = DataLoader(dataset=dev_dataset,
-                                batch_size=BATCH_SIZE,
+                                batch_size=DEV_BATCH_SIZE,
                                 shuffle=False,
                                 pin_memory=True,
                                 num_workers=42)
