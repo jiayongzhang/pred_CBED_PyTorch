@@ -27,8 +27,8 @@ export OMP_NUM_THREADS=42
 #export OMP_WAIT_POLICY=passive
 #export LSB_CHKPNT_DIR=/gpfs/alpine/scratch/z8j/chm147/chkpt
 export PATH="/ccs/home/z8j/summit/pytorch-1.0-p3/anaconda3/bin:$PATH"
-source ~/summit/pytorch-1.0-p3/source_to_run_pytorch1.0-p3
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/summit/pytorch-1.0-p3/9.2.148/lib64/
+source ~/summit/pytorch-1.0-p3/source_to_run_pytorch1.0-p3
 
 cd $LS_SUBCWD
 

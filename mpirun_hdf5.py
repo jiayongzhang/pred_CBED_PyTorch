@@ -52,6 +52,10 @@ from tools import my_transforms
 from tools.my_model import Model
 from tools.my_prefetcher import data_prefetcher
 
+# hdf5 dataloader
+from hdf5_dataloader.src.dataset import HDF5Dataset
+from hdf5_dataloader.src.transforms import ArrayToTensor, ArrayCenterCrop
+ 
 # Ignore warnings
 import warnings
 warnings.filterwarnings("ignore")
@@ -70,7 +74,7 @@ def init():
     global device, weights, train_paths, dev_paths
     global TRAIN_BATCH_SIZE, DEV_BATCH_SIZE, OMP_NUM_THREADS
 
-    OMP_NUM_THREADS = int(os.environ["OMP_NUM_THREADS"])
+    OMP_NUM_THREADS = os.environ["OMP_NUM_THREADS"]
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -81,28 +85,8 @@ def init():
 
     TRAIN_BATCH_SIZE = 32
     DEV_BATCH_SIZE = 1
+    
 
-class HDF5Dataset(Dataset):
-    '''read HDF5 file'''
-
-    def __init__(self, h5_files, batch_size=1, transform=None):
-        self.h5_files = h5_files
-        self.batch_size = batch_size
-        self.transform = transform
-
-    def __getitem__(self, index):
-        this_dataset = CBEDDataset(data_file=self.h5_files[index],
-                                   transform=self.transform)
-        this_loader = DataLoader(dataset=this_dataset,
-                                 batch_size=self.batch_size,
-                                 shuffle=True,
-                                 pin_memory=True,
-                                 num_workers=OMP_NUM_THREADS)
-        return this_loader
-
-    def __len__(self):
-        return len(self.h5_files)
-        
 class CBEDDataset(Dataset):
     """ CBED dataset."""
 
@@ -128,27 +112,30 @@ class CBEDDataset(Dataset):
         self.y_data = torch.Tensor(tmp_y).long()
         
     def __getitem__(self, index):
-        _x = self.x_data[index]
+        #_x = self.x_data[index]
         if self.transform is not None:
-            #self.x_data[index] = self.transform(self.x_data[index])
-            _x = self.transform(_x)
-        return _x, self.y_data[index]
+            self.x_data[index] = self.transform(self.x_data[index])
+            #_x = self.transform(_x)
+        return self.x_data[index], self.y_data[index]
 
     def __len__(self):
         return len(self.y_data)
 
+transform_hdf5 = transforms.Compose([ArrayCenterCrop(256),
+                                     ArrayToTensor()])
+
 data_transform = transforms.Compose([
-                my_transforms.TensorPower(0.25),
-                transforms.ToPILImage(),
-                transforms.Resize(256),
-                transforms.CenterCrop(256),
-                transforms.ToTensor(),
-                #transforms.Normalize(mean = [0.5,0.5,0.5],std = [0.5,0.5,0.5])
-                ])
+    my_transforms.TensorPower(0.25),
+    transforms.ToPILImage(),
+    transforms.Resize(256),
+    transforms.CenterCrop(256),
+    transforms.ToTensor(),
+    #transforms.Normalize(mean = [0.5,0.5,0.5],std = [0.5,0.5,0.5])
+])
 
 def train(epoch=0):
     model.train()
-    for data, target in BackgroundGenerator(train_file_loader, max_prefetch=3):
+    for data, target in BackgroundGenerator(train_loader, max_prefetch = 3):
     #prefetcher = data_prefetcher(train_loader)
     #data, target = prefetcher.next()
     #while data is not None:
@@ -237,32 +224,24 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.99))
 # prefetch multiple files
 # TODO: send multiple h5 files indices to CBEDDataset, and read it at once
 # Then prefetch this
-train_path_loader = HDF5Dataset(train_paths,
-                                batch_size=TRAIN_BATCH_SIZE,
-                                transform=data_transform)
-prefetcher = data_prefetcher(train_path_loader)
-train_file_loader = prefetcher.next()
-begin = time.time()
-while train_file_loader is not None:
-#for this_file in (train_paths):
+for this_file in (train_paths):
     #print("Current file: %s"%this_file)
-    #read_start = time.time()
-    #try:
-    #    train_dataset = CBEDDataset(this_file,
-    #                                transform = data_transform)
-    #except:
-    #    print("Warning: error handling %s, will be ignored."%this_file)
-    #    continue
-    #else:
-    #    train_loader = DataLoader(dataset=train_dataset,
-    #                              batch_size=TRAIN_BATCH_SIZE,
-    #                              shuffle=True,
-    #                              pin_memory=True,
-    #                              num_workers=OMP_NUM_THREADS)
-
-    #read_end = time.time()
-    #print('Reading {} tooks {} s\n'.format(this_file, read_end-read_start))
-    print('Per train file tooks {} s\n'.format(time.time()-begin))
+    read_start = time.time()
+    try:
+        train_dataset = CBEDDataset(this_file,
+                                    transform = data_transform)
+    except:
+        print("Warning: error handling %s, will be ignored."%this_file)
+        continue
+    else:
+        train_loader = DataLoader(dataset=train_dataset,
+                                  batch_size=TRAIN_BATCH_SIZE,
+                                  shuffle=True,
+                                  pin_memory=True,
+                                  num_workers=OMP_NUM_THREADS)
+    
+    read_end = time.time()
+    print('Reading {} tooks {} s\n'.format(this_file, read_end-read_start))
     begin = time.time()
     for i in range(10):
         loss = train()
@@ -270,8 +249,6 @@ while train_file_loader is not None:
     end = time.time()
     print('Training batch:\tTiming: {:.2f} s,\tLoss: {:.6f}'.format(
           end-begin, loss))
-
-    train_file_loader = prefetcher.next()
 
 # test
 for this_file in (dev_paths):
