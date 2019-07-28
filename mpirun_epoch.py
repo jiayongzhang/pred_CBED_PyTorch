@@ -22,6 +22,7 @@ https://blog.csdn.net/zwqjoy/article/details/89415933
 https://www.analyticsvidhya.com/blog/2017/03/imbalanced-classification-problem/
 10. ~~~Add support for multiple pred~~~
 11. can we really train on different hf files, instead on a total run?
+12. Reead multiple HDF5 files at one time, instead of using one hdf5 per training
 """
 
 from __future__ import print_function, division
@@ -34,7 +35,6 @@ import glob
 #import pylab
 import pandas as pd
 import numpy as np
-from scipy import stats
 #from tqdm import tqdm, tqdm_notebook as tn
 from PIL import Image
 #import matplotlib.pyplot as plt
@@ -165,10 +165,9 @@ def train(epoch=0):
         #print("\n\n output")
         #print(outputs)
         #print("target")
-        #print(labels)
+        #print(labels
         loss.backward()
         optimizer.step()
-        print(stats.describe(outputs.cpu().detach().numpy(), axis=1))
 
         #data, target = prefetcher.next()
         
