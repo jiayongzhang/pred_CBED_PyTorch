@@ -65,10 +65,12 @@ def get_weights(filename):
 
     return weights
 
-# define initial variables
+# define initial variables, constants
 def init():
     global device, weights, train_paths, dev_paths
-    global TRAIN_BATCH_SIZE, DEV_BATCH_SIZE, OMP_NUM_THREADS
+    global TRAIN_BATCH_SIZE, DEV_BATCH_SIZE, OMP_NUM_THREADS, USE_ALL_GPU
+
+    USE_ALL_GPU = True
 
     OMP_NUM_THREADS = int(os.environ["OMP_NUM_THREADS"])
 
@@ -111,9 +113,9 @@ class CBEDDataset(Dataset):
         self.x_data = None
         self.y_data = None
         
-        self.__read_hdf5__(data_file)
+        self.__read_hdf5(data_file)
         
-    def __read_hdf5__(self, data_file):
+    def __read_hdf5(self, data_file):
         f = h5py.File(data_file, mode='r', swmr=True)
         tmp_x, tmp_y = [], []
         for key in f.keys():
@@ -130,7 +132,6 @@ class CBEDDataset(Dataset):
     def __getitem__(self, index):
         _x = self.x_data[index]
         if self.transform is not None:
-            #self.x_data[index] = self.transform(self.x_data[index])
             _x = self.transform(_x)
         return _x, self.y_data[index]
 
@@ -139,23 +140,29 @@ class CBEDDataset(Dataset):
 
 data_transform = transforms.Compose([
                 my_transforms.TensorPower(0.25),
-                transforms.ToPILImage(),
-                transforms.Resize(256),
-                transforms.CenterCrop(256),
-                transforms.ToTensor(),
+                #transforms.ToPILImage(),
+                #transforms.Resize(256),
+                #transforms.CenterCrop(256),
+                #transforms.ToTensor(),
                 #transforms.Normalize(mean = [0.5,0.5,0.5],std = [0.5,0.5,0.5])
                 ])
 
 def train(epoch=0):
     model.train()
-    for data, target in BackgroundGenerator(train_file_loader, max_prefetch=3):
+    total_loss = 0.0
+    for inputs, labels in BackgroundGenerator(train_file_loader, max_prefetch=3):
     #prefetcher = data_prefetcher(train_loader)
     #data, target = prefetcher.next()
     #while data is not None:
-        data, target = Variable(data).to(device), Variable(target).to(device)
+        inputs, labels = Variable(inputs).to(device), Variable(labels).to(device)
         optimizer.zero_grad()
-        output = model(data)
-        loss = criterion(output, target)
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        total_loss += loss.item()
+        #print("\n\n output")
+        #print(outputs)
+        #print("target")
+        #print(labels
         loss.backward()
         optimizer.step()
 
@@ -165,13 +172,13 @@ def train(epoch=0):
     #print('Training: Timing: {:.2f} s\tLoss: {:.6f}'.format(
     #      end-begin, loss.item())
 
-    return loss.item()
+    return total_loss/len(train_file_loader)
 
 def dev():
     model.eval()
     test_loss = 0
     correct = 0
-    for data, target in BackgroundGenerator(dev_loader, max_prefetch = 3):
+    for data, target in BackgroundGenerator(dev_loader, max_prefetch=3):
         data = Variable(data, volatile=True).to(device)
         target = Variable(target).to(device)
         output = model(data)
@@ -193,7 +200,7 @@ def dev_multipred():
     model.eval()
     test_loss = 0
     correct = 0
-    for data, target in BackgroundGenerator(dev_loader, max_prefetch = 3):
+    for data, target in BackgroundGenerator(dev_loader, max_prefetch=3):
         data = Variable(data, volatile=True).to(device)
         target = Variable(target).to(device)
         output = model(data)
@@ -218,10 +225,11 @@ def dev_multipred():
 #================================================================
 
 init()
+
 model = Model()
-#if torch.cuda.device_count() > 1:
-#    print("We are running on {} GPUs!\n".format(torch.cuda.device_count()))
-#    model = nn.DataParallel(model)
+if torch.cuda.device_count() > 1 and USE_ALL_GPU:
+    print("We are running on {} GPUs!\n".format(torch.cuda.device_count()))
+    model = nn.DataParallel(model)
 model.to(device)
 
 # use softmax
@@ -237,12 +245,17 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.99))
 # prefetch multiple files
 # TODO: send multiple h5 files indices to CBEDDataset, and read it at once
 # Then prefetch this
-train_path_loader = HDF5Dataset(train_paths,
-                                batch_size=TRAIN_BATCH_SIZE,
-                                transform=data_transform)
-prefetcher = data_prefetcher(train_path_loader)
+train_path_dataset = HDF5Dataset(train_paths,
+                                 batch_size=TRAIN_BATCH_SIZE,
+                                 transform=data_transform)
+#train_path_loader = DataLoader(dataset=train_path_dataset,
+#                               batch_size=1,
+#                               shuffle=True,
+#                               pin_memory=True,
+#                               num_workers=OMP_NUM_THREADS)
+prefetcher = data_prefetcher(train_path_dataset)
 train_file_loader = prefetcher.next()
-begin = time.time()
+#for train_file_loader in BackgroundGenerator(train_path_loader, max_prefetch=2):
 while train_file_loader is not None:
 #for this_file in (train_paths):
     #print("Current file: %s"%this_file)
@@ -262,14 +275,13 @@ while train_file_loader is not None:
 
     #read_end = time.time()
     #print('Reading {} tooks {} s\n'.format(this_file, read_end-read_start))
-    print('Per train file tooks {} s\n'.format(time.time()-begin))
     begin = time.time()
     for i in range(10):
         loss = train()
         print(loss),
-    end = time.time()
     print('Training batch:\tTiming: {:.2f} s,\tLoss: {:.6f}'.format(
-          end-begin, loss))
+          time.time()-begin, loss))
+    print('Training total time {:.2f} s\n'.format(time.time()-begin))
 
     train_file_loader = prefetcher.next()
 
