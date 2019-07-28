@@ -67,10 +67,12 @@ def get_weights(filename):
 
 # define initial variables, constants
 def init():
-    global device, weights, train_paths, dev_paths
+    global device, weights, train_paths, dev_paths, model_ckpt
     global TRAIN_BATCH_SIZE, DEV_BATCH_SIZE, OMP_NUM_THREADS, USE_ALL_GPU
 
     USE_ALL_GPU = True
+
+    model_ckpt = "params.pkl"
 
     OMP_NUM_THREADS = int(os.environ["OMP_NUM_THREADS"])
 
@@ -232,6 +234,10 @@ if torch.cuda.device_count() > 1 and USE_ALL_GPU:
     model = nn.DataParallel(model)
 model.to(device)
 
+#load model if checkpoint exists
+if os.path.isfile(model_ckpt):
+    model.load_state_dict(torch.load(model_ckpt))
+
 # use softmax
 #weights = np.exp(count_data['weight'])
 class_weights = torch.Tensor(weights).to(device)
@@ -281,9 +287,12 @@ while train_file_loader is not None:
         print(loss),
     print('Training batch:\tTiming: {:.2f} s,\tLoss: {:.6f}'.format(
           time.time()-begin, loss))
-    print('Training total time {:.2f} s\n'.format(time.time()-begin))
+
+    # save model
+    torch.save(model.state_dict(), model_ckpt)
 
     train_file_loader = prefetcher.next()
+    print('Training total time {:.2f} s\n'.format(time.time()-begin))
 
 # test
 for this_file in (dev_paths):

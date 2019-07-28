@@ -11,6 +11,7 @@ test/
 orig_data/
 oe*
 run-*py
+*pkl
 
 # C extensions
 *.so
