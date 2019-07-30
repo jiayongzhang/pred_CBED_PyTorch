@@ -71,7 +71,7 @@ def init():
     global device, weights, train_paths, dev_paths, model_ckpt
     global TRAIN_BATCH_SIZE, DEV_BATCH_SIZE, OMP_NUM_THREADS, USE_ALL_GPU
 
-    USE_ALL_GPU = True
+    USE_ALL_GPU = False
 
     model_ckpt = "params.pkl"
 
@@ -168,7 +168,7 @@ def train(epoch=0):
         #print(labels)
         loss.backward()
         optimizer.step()
-        print(stats.describe(outputs.cpu().detach().numpy(), axis=1))
+        #print(stats.describe(outputs.cpu().detach().numpy(), axis=1))
 
         #data, target = prefetcher.next()
         
@@ -190,7 +190,7 @@ def dev():
         test_loss += criterion(output, target).cpu().data.numpy()
         # get the index of the max
         pred = output.data.max(1, keepdim=True)[1][0]
-        print(pred+1, target+1)
+        #print(pred+1, target+1)
         correct += pred.eq(target.data.view_as(pred)).sum()
 
     test_loss /= len(dev_loader.dataset)
@@ -238,7 +238,11 @@ model.to(device)
 
 #load model if checkpoint exists
 if os.path.isfile(model_ckpt):
-    model.load_state_dict(torch.load(model_ckpt))
+    try:
+        pass
+        #model.load_state_dict(torch.load(model_ckpt))
+    except:
+        pass
 
 # use softmax
 #weights = np.exp(count_data['weight'])
@@ -291,7 +295,7 @@ while train_file_loader is not None:
           time.time()-begin, loss))
 
     # save model
-    torch.save(model.state_dict(), model_ckpt)
+    #torch.save(model.state_dict(), model_ckpt)
 
     train_file_loader = prefetcher.next()
     print('Training total time {:.2f} s\n'.format(time.time()-begin))

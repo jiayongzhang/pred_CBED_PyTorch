@@ -10,19 +10,19 @@ class Model(nn.Module):
             nn.Conv2d(64,64,5),
             nn.ReLU(True),
             nn.MaxPool2d(2,2),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             nn.Conv2d(64,32,5),
             nn.ReLU(True),
             nn.Conv2d(32,32,5),
             nn.ReLU(True),
             nn.MaxPool2d(2,2),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             nn.Conv2d(32,16,5),
             nn.ReLU(True),
             nn.Conv2d(16,16,5),
             nn.ReLU(True),
             nn.MaxPool2d(2,2),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             nn.Conv2d(16,8,5),
             nn.ReLU(True),
             nn.Conv2d(8,8,5),
@@ -33,10 +33,10 @@ class Model(nn.Module):
             nn.Dropout(0.25),
             nn.Linear(8 * 49 * 49,3000),
             nn.ReLU(True),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             nn.Linear(3000,500),
             nn.ReLU(True),
-            nn.Dropout(0.25),
+            nn.Dropout(0.3),
             #nn.Linear(2000,500),
             #nn.ReLU(True),
             #nn.Dropout(0.25),
@@ -44,10 +44,12 @@ class Model(nn.Module):
         )
 
         self.softmax = nn.Softmax()
+        self.bn = nn.BatchNorm1d(8*49*49)
 
     def forward(self, x):
         x = self.conv(x)
         x = x.view(-1,8*49*49)
+        #x = self.bn(x)
         x = self.linear(x)
         #x = self.softmax(x)
 
