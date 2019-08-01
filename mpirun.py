@@ -39,7 +39,7 @@ from scipy import stats
 from PIL import Image
 #import matplotlib.pyplot as plt
 #from skimage import io, transform
-from prefetch_generator import BackgroundGenerator, background
+#from prefetch_generator import BackgroundGenerator, background
 import torch
 from torchvision import transforms, datasets, utils
 import torch.nn as nn
@@ -52,6 +52,7 @@ import torch.optim as optim
 from tools import my_transforms
 from tools.my_model import Model
 from tools.my_prefetcher import data_prefetcher
+from tools.my_prefetcher import BackgroundGenerator
 
 # Ignore warnings
 import warnings
@@ -87,27 +88,6 @@ def init():
     TRAIN_BATCH_SIZE = 32
     DEV_BATCH_SIZE = 1
 
-class HDF5Dataset(Dataset):
-    '''read HDF5 file'''
-
-    def __init__(self, h5_files, batch_size=1, transform=None):
-        self.h5_files = h5_files
-        self.batch_size = batch_size
-        self.transform = transform
-
-    def __getitem__(self, index):
-        this_dataset = CBEDDataset(data_file=self.h5_files[index],
-                                   transform=self.transform)
-        this_loader = DataLoader(dataset=this_dataset,
-                                 batch_size=self.batch_size,
-                                 shuffle=True,
-                                 pin_memory=True,
-                                 num_workers=OMP_NUM_THREADS)
-        return this_loader
-
-    def __len__(self):
-        return len(self.h5_files)
-        
 class CBEDDataset(Dataset):
     """ CBED dataset."""
 
@@ -141,6 +121,52 @@ class CBEDDataset(Dataset):
     def __len__(self):
         return len(self.y_data)
 
+def HDF5Generator(h5_files, batch_size=1, transform=None):
+    for h5_file in h5_files:
+        this_dataset = CBEDDataset(data_file=h5_file,
+                                   transform=transform)
+        this_loader = DataLoader(dataset=this_dataset,
+                                 batch_size=batch_size,
+                                 shuffle=True,
+                                 #pin_memory=True,
+                                 num_workers=OMP_NUM_THREADS)
+        yield this_loader
+
+class HDF5Dataset(Dataset):
+    '''read HDF5 file'''
+
+    def __init__(self, h5_files, batch_size=1, transform=None):
+        self.h5_files = h5_files
+        self.batch_size = batch_size
+        self.transform = transform
+        self.count = 0
+
+    def __getitem__(self, index):
+        this_dataset = CBEDDataset(data_file=self.h5_files[index],
+                                   transform=self.transform)
+        this_loader = DataLoader(dataset=this_dataset,
+                                 batch_size=self.batch_size,
+                                 shuffle=True,
+                                 pin_memory=True,
+                                 num_workers=OMP_NUM_THREADS)
+        return this_loader
+
+    def __len__(self):
+        return len(self.h5_files)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        if self.count < self.__len__():
+            self.count += 1
+            return self.__getitem__(self.count)
+        else:
+            raise StopIteration()
+
 data_transform = transforms.Compose([
                 my_transforms.TensorPower(0.25),
                 #transforms.ToPILImage(),
@@ -153,7 +179,8 @@ data_transform = transforms.Compose([
 def train(epoch=0):
     model.train()
     total_loss = 0.0
-    for inputs, labels in BackgroundGenerator(train_file_loader, max_prefetch=3):
+    print(type(train_file_loader))
+    for inputs, labels in train_file_loader:
     #prefetcher = data_prefetcher(train_loader)
     #data, target = prefetcher.next()
     #while data is not None:
@@ -250,25 +277,28 @@ class_weights = torch.Tensor(weights).to(device)
 
 criterion = nn.CrossEntropyLoss(weight=class_weights)
 #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9,0.99))
+optimizer = optim.Adam(model.parameters(), lr=0.0001, betas=(0.9,0.999))
 #if torch.cuda.device_count() > 1:
 #    optimizer = nn.DataParallel(optimizer)
 
 # prefetch multiple files
 # TODO: send multiple h5 files indices to CBEDDataset, and read it at once
 # Then prefetch this
-train_path_dataset = HDF5Dataset(train_paths,
-                                 batch_size=TRAIN_BATCH_SIZE,
-                                 transform=data_transform)
+#train_path_dataset = HDF5Dataset(train_paths,
+train_path_dataset = HDF5Generator(train_paths,
+                                  batch_size=TRAIN_BATCH_SIZE,
+                                  transform=data_transform)
 #train_path_loader = DataLoader(dataset=train_path_dataset,
 #                               batch_size=1,
 #                               shuffle=True,
 #                               pin_memory=True,
 #                               num_workers=OMP_NUM_THREADS)
-prefetcher = data_prefetcher(train_path_dataset)
-train_file_loader = prefetcher.next()
-#for train_file_loader in BackgroundGenerator(train_path_loader, max_prefetch=2):
-while train_file_loader is not None:
+#prefetcher = data_prefetcher(train_path_dataset)
+#train_file_loader = prefetcher.next()
+for train_file_loader in BackgroundGenerator(train_path_dataset):#, max_prefetch=1):
+    print("haha")
+#train_file_loader = train_path_gen.next()
+#while train_file_loader is not None:
 #for this_file in (train_paths):
     #print("Current file: %s"%this_file)
     #read_start = time.time()
@@ -297,7 +327,8 @@ while train_file_loader is not None:
     # save model
     #torch.save(model.state_dict(), model_ckpt)
 
-    train_file_loader = prefetcher.next()
+    #train_file_loader = prefetcher.next()
+    #train_file_loader = train_path_gen.next()
     print('Training total time {:.2f} s\n'.format(time.time()-begin))
 
 # test

@@ -34,7 +34,6 @@ class BackgroundGenerator(threading.Thread):
         return self
 
 
-
 class data_prefetcher():
     ''' prefetch cbed stacks in same h5 file'''
     def __init__(self, loader):
